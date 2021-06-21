@@ -1,0 +1,51 @@
+@import './mixin.less';
+.content{
+    margin-top: 32px;
+    .message_input{
+        .phoneNum{
+            color: inherit;
+            .phone_img{
+                margin-left: 16px;
+                width: 32px;
+                height: 32px;
+                .bg-image('help');
+                display: inline-block;
+                background-size: 32px 32px;
+                background-repeat: no-repeat;
+                vertical-align: middle;
+            }
+        }
+        .codeWidth{
+            line-height: inherit;
+            .checkNum{
+                width: 100%;
+                font-size: 15px;
+                align-items: center;
+                border: 0;
+                color: #F72539;
+            }
+            .active{
+                color: #666666;
+            }
+        }
+    }
+    .padd{
+        padding: 0 32px;
+    }
+    .btn_part{
+        margin-top: 64px;
+        .formssi_btn{
+            height: 88px;
+            line-height: 88px;
+            font-size: 15px;
+            border-radius: 4px;
+            box-shadow: 0 5px 18px 0 rgba(255,145,156,0.65);
+        }  
+    }
+    .message{
+        margin-top: 32px;
+        line-height: 45px;
+        font-size: 13px;
+        color: #999999;
+    }
+}
