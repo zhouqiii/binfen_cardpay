@@ -60,7 +60,7 @@ export default {
     name:'PayContract',
     data(){
         return{
-            count:'1',//用来标识，当卡信息获取成功count=1，对验证码输入框的监听和修改手机号的入口才成立，
+            count:'0',//用来标识，当卡信息获取成功count=1，对验证码输入框的监听和修改手机号的入口才成立，
             //否则不监听因为信息获取失败，确定按钮一定不可以点击，也不可以去修改手机号
             type:'0',//lastGoback
             title:'签约',
@@ -78,7 +78,7 @@ export default {
         }
     },
     methods:{
-        //从url拿到卡信息后赋值
+        //从客户端拿到卡信息后赋值
         assign(data) {
             if (notNull(data)) {
                 if (typeof data === 'string') {
@@ -154,12 +154,13 @@ export default {
         //     }
         // },
         //更换手机号弹框
-        showDialog(){
+        showDialog() {
+            const that=this
             const mymessage = confirm('前往更换手机号?');
             if (mymessage === true) {
                 callAppMethod({
                     callName: "intentToOtherCardInfo",
-                    parameters: JSON.stringify(this.info),
+                    parameters: that.info,
                 });
             }
         },
@@ -185,7 +186,7 @@ export default {
                         callAppMethod({
                             callName: "lastGoBack",
                         });
-                    } else {
+                    } else if(res.stat !== '01' && res.stat !== '02'){
                         let message = '签约失败，请重试！'
                         if (res.result) {
                             message = res.result
@@ -202,13 +203,14 @@ export default {
     },
     created(){
         this.$nextTick(()=>{
-            // callAppMethod({
-            //     callName: "sendCardInfo",
-            //     callback: function(data){
-            //         this.assign(data)
-            //     }
-            // });
-            this.assign({cardAlias:'jsakljfla',cardShow:'8126 **** ***** 8989',phoneNo:'139 **** 8888'})
+            const that=this
+            callAppMethod({
+                callName: "sendCardInfo",
+                callback: function(data){
+                    that.assign(data)
+                }
+            });
+            
         })
     }
 }

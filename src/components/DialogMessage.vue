@@ -31,9 +31,10 @@ export default {
   },
   methods: {
     goClient() {
+      const that=this
       callAppMethod({
           callName: "intentToOtherCardInfo",
-          parameters: this.data,
+          parameters: that.data,
       });
     },
      dialogHide() {
