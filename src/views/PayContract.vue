@@ -50,10 +50,10 @@
 </template>
 <script>
 import '../style/paycontract.less'
-import createDom from "@/utils/createDom"
-import DialogMessage from '@/components/DialogMessage'
 import Loading from '@/components/Loading.vue'
-import { callAppMethod, notNull, isMobile } from "@/utils/commonFn";
+import createDomLoading from "@/utils/createDom"
+import { getVerCode, sendSign } from '@/utils/commonInterface'
+import { callAppMethod, notNull, CreateDom,isMobile, getParamsFromUrl} from "@/utils/commonFn";
 
 const TIME_COUNT = 60;
 export default {
@@ -85,15 +85,7 @@ export default {
                     data=JSON.parse(data)
                 }
                 if (!notNull(data.cardAlias) || !notNull(data.phoneNo) || !notNull(data.cardShow)) {
-                    createDom(
-                        DialogMessage,
-                        {},
-                        {
-                            content: `
-                            <div style="text-align:center;">卡信息获取失败，请返回重试！</div>
-                                    `,
-                        },
-                    );
+                    CreateDom(`<div style="text-align:center;">卡信息获取失败，请返回重试！</div>`)
                     this.btnChangeEnable = true
                     this.count='0'
                     this.btnIfSubmit=true
@@ -131,72 +123,83 @@ export default {
         },
         //发送验证码接口
         sendVerCode() {
-            this.request({
-                url: "/cgi.do",
-                data: {
-                   cardAlias: this.info.cardAlias
-                },
-                params:{
-                    txnId: isMobile()+"SIGN00003",
-                }
-            })
-            .then((res) => {
-                if (res.stat === '00') {
+            const data =  {
+                gtype: '9',
+                attest: '-339418059',
+                imei: getParamsFromUrl("imei") || "123456",
+                txnId: isMobile() + 'SIGN00003',
+                cardAlias: this.info.cardAlias,
+            }
+            getVerCode(data).then((res)=>{
+                if (JSON.parse(res.data).stat === '00') {
                     console.log('验证码发送成功')
                 }
             })
-            .catch(() => {});
         },
-        //监听验证码input框的输入，有值，则提交按钮高亮显示
-        // checkVerCode(val) {
-        //     if (val === '1') {
-        //         this.btnIfSubmit = !this.verCode
-        //     }
-        // },
         //更换手机号弹框
         showDialog() {
-            const that=this
-            const mymessage = confirm('前往更换手机号?');
-            if (mymessage === true) {
-                callAppMethod({
-                    callName: "intentToOtherCardInfo",
-                    parameters: that.info,
-                });
-            }
+            const ifPhone = true
+            CreateDom(`
+                <div style="text-align:center;font-size:16px;line-height:32px;font-weight:600">温馨提示</div>
+                <div>手机号为您在发卡行预留的手机号，如有修改，请前往【卡片管理】更新后再签约。</div>
+                    ` ,
+                this.info,
+                ifPhone
+            )
+
         },
         //签约按钮
         signUp(){
-            let ld=createDom(Loading)
+            let ld=createDomLoading(Loading)
             if(!this.verCode || this.verCode.toString().split(' ').join('').length === 0 || this.verCode.length !== 6) {
                 ld.hide()
-                createDom( DialogMessage, {}, { content: `<div style="text-align:center">请输入6位短信验证码</div>` });
+                CreateDom(`<div style="text-align:center">请输入6位短信验证码</div>`)
             } else {
-                this.request({
-                    url: "/cgi.do",
-                    data: {
+                const data = {
+                    gtype: '9',
+                    attest: '-339418059',
+                    imei: getParamsFromUrl("imei") || "123456",
+                    txnId: isMobile() + 'SIGN00004',
                     smsCode: this.verCode
-                    },
-                    params: {
-                        txnId: isMobile()+"SIGN00004",
-                    }
-                })
-                .then((res) => {
+                }
+                sendSign(data).then((res) => {
                     ld.hide()
-                    if (res.stat === '00') {
-                        callAppMethod({
-                            callName: "lastGoBack",
-                        });
-                    } else if(res.stat !== '01' && res.stat !== '02'){
-                        let message = '签约失败，请重试！'
-                        if (res.result) {
-                            message = res.result
+                    if (res.code === '00') {
+                        const stat=JSON.parse(res.data).stat
+                        if(stat === '00'){
+                            callAppMethod({
+                                callName: "lastGoBack",
+                            });
+                        }else if(stat==='01'){
+                            CreateDom(`<div style="text-align:center">您已经超时，请重新登录</div>`,
+                                {},
+                                !ifAccount,
+                                ifAccount
+                            )
+                        }else if(stat==='02'){
+                            CreateDom(`<div style="text-align:center">发现您的账户在其他设备登录，如非本人操作请尽快更改您的登录密码。</div>`,
+                                {},
+                                !ifAccount,
+                                ifAccount
+                            )
+                        }else{
+                            let message = '签约失败，请重试！'
+                            if (res.message) {
+                                message = res.message
+                            }
+                            CreateDom(`<div style="text-align:center">${message}</div>`)
                         }
-                        createDom( DialogMessage, {}, { content: `<div style="text-align:center">${message}</div>` } );
+                    } else if(res.code !== '-501'  && res.code !== '-505'){
+                        let message = '签约失败，请重试！'
+                        if (res.message) {
+                            message = res.message
+                        }
+                        CreateDom(`<div style="text-align:center">${message},请重试！</div>`)
                     }
                 })
                 .catch(() => {
                     ld = null
-                    createDom( DialogMessage, {}, { content: `<div style="text-align:center">请求失败,请重试！</div>` } );
+                    CreateDom(`<div style="text-align:center">请求失败,请重试！</div>`)
                 });
             }
         },
@@ -210,11 +213,10 @@ export default {
                     that.assign(data)
                 }
             });
-            
+           // that.assign({cardAlias:'ahldsk',cardShow:'6879 **** **** 8989',phoneNo:'136 **** 8899'})
         })
     }
 }
 </script>
 <style scoped>
-
 </style>

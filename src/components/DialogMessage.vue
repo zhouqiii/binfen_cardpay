@@ -3,17 +3,15 @@
     <div class="dialog_box">
       <div class="dialog_content">
         <div class="text_rule padd"><div v-html="content"></div></div>
-        <!-- <div class="dialog_btn padd" v-show="ifPhone">
-          <div class="applyBtn comfirmbtn" @click="goClient">前往更换手机号</div>
-        </div> -->
-        <div class="dialog_btn_group" @click="dialogHide">
+        <div class="dialog_btn_group" v-show="!ifPhone" @click="dialogHide">
           <div class="btn cancel_btn">知道了</div>
+        </div>
+        <div class="dialog_btn_group" v-show="ifPhone">
+          <div class="btn cancel_btnphone" @click="dialogHide">取消</div>
+          <div class="btn change_btn" @click="goClient">前往更换手机号</div>
         </div>
       </div>
     </div>
-    <!-- <div class="dialog_icon" @click="dialogHide" v-show="ifPhone">
-      <svg-icon iconClass="cancelOl" class="stateIcon"></svg-icon>
-    </div> -->
   </div>
 </template>
 
@@ -26,7 +24,10 @@ export default {
     return {
       title: '',
       content: '',
-      data:{}
+      data:{},
+      ifPhone:false,//用来标识是更换手机号的弹框，还是其他弹框
+      ifAccount:false,//用来标识，当是发送请求出现超时或多账号登录给的弹框提示，因为这一步需要与客户端交互
+
     };
   },
   methods: {
@@ -36,11 +37,25 @@ export default {
           callName: "intentToOtherCardInfo",
           parameters: that.data,
       });
+      that.remove();
     },
-     dialogHide() {
+    dialogHide() {
+      if(this.ifAccount){
+          callAppMethod({
+              callName: "clearLoginInfo",
+          });
+          callAppMethod({
+              callName: "toLogin",
+          });
+       }
       this.remove();
     },
   },
+  created(){
+    this.$nextTick(()=>{
+      // console.log(this.data,this,this.ifPhone,this.ifAccount)
+    })
+  }
 
 };
 </script>
@@ -75,32 +90,30 @@ export default {
         display: inline-block;
         width: 100%;
         .padd{
-          padding: 60px 32px;
           height: auto;
           white-space: -moz-pre-wrap; /*Mozilla,since1999*/
           white-space: -pre-wrap; /*Opera4-6*/
           white-space: -o-pre-wrap; /*Opera7*/
           word-wrap: break-word; /*InternetExplorer5.5+*/
-          line-height: 42px;
           font-size: 14px;
           color: #333333;
           font-family: inherit;
+          padding: 60px 32px;
+          line-height: 42px;
         }
         .dialog_btn{
-          padding: 0 32px 60px 32px;
-          height:70px;
-          font-size: 14px;
-          line-height: 70px;
+          padding: 0 54px 40px 54px;
+          height:78px;
+          line-height: 78px;
           .applyBtn{
-            width: 80%;
             text-align: center;
-            border-radius: .3rem;
+            border-radius: 4px;
             margin: auto;
           }
           .comfirmbtn{
             background: rgba(102, 153, 255, 1);
             color: #ffffff;
-            font-size: 14px;
+            font-size: 16px;
           }
           .active{
             width: 30%;
@@ -108,10 +121,19 @@ export default {
         }
         .dialog_btn_group {
           height: 90px;
+          line-height: 90px;
           border-top: 1px solid #F5F5F5;
+          text-align: center;
           .flex_center;
-          .cancel_btn{
+          .cancel_btn,.cancel_btnphone,.change_btn{
              font-size: 15px;
+             flex: 1 1 50%;
+             height: 100%;
+          }
+          .cancel_btnphone{
+            border-right: 1px solid #F5F5F5;
+          }
+          .change_btn,.cancel_btn{
              color: #F72539;
           }
         }

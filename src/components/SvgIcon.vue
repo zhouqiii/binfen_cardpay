@@ -34,8 +34,8 @@
 
 <style lang="less" scoped>
 .svg-icon{
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 60px;
+    height: 60px;
     vertical-align: -0.15em;
     fill: currentColor;
     overflow: hidden;

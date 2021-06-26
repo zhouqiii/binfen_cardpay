@@ -1,3 +1,5 @@
+import createDom from "@/utils/createDom"
+import DialogMessage from '@/components/DialogMessage'
 // 判断当前操作系统及app版本
 export const APPSYS = () => {
     let s;
@@ -74,49 +76,61 @@ export const getParamsFromUrl = (arg = "") => {
 /**获取移动端设备
  *1：Android；2：ios
  */
- export const isMobile = () =>{
-    if(/android/i.test(navigator.userAgent) || /adr/i.test(navigator.userAgent)) {
+export const isMobile = () => {
+    if (/android/i.test(navigator.userAgent) || /adr/i.test(navigator.userAgent)) {
         return 1
-    } else if(/iPhone|iPad|iPod|iOS/i.test(navigator.userAgent)) {
+    } else if (/iPhone|iPad|iPod|iOS/i.test(navigator.userAgent)) {
         return 2
     } else {
         return 1
     }
 }
- 
+
 // 与缤纷生活的交互方法jsBridge
 function setupWebViewJavascriptBridge(callback) {
-	if(window.WebViewJavascriptBridge) {
-		callback(WebViewJavascriptBridge);
-	} else {
-		document.addEventListener(
-			'WebViewJavascriptBridgeReady',
-			function() {
-				callback(WebViewJavascriptBridge);
-			},
-			false
-		);
-	}
-	if(window.WVJBCallbacks) {
-		return window.WVJBCallbacks.push(callback);
-	}
-	window.WVJBCallbacks = [callback];
-	var WVJBIframe = document.createElement('iframe');
-	WVJBIframe.style.display = 'none';
-	WVJBIframe.src = 'wvjbscheme://__BRIDGE_LOADED__';
-	document.documentElement.appendChild(WVJBIframe);
-	setTimeout(function() {
-		document.documentElement.removeChild(WVJBIframe);
-	}, 0);
+    if (window.WebViewJavascriptBridge) {
+        callback(WebViewJavascriptBridge);
+    } else {
+        document.addEventListener(
+            'WebViewJavascriptBridgeReady',
+            function () {
+                callback(WebViewJavascriptBridge);
+            },
+            false
+        );
+    }
+    if (window.WVJBCallbacks) {
+        return window.WVJBCallbacks.push(callback);
+    }
+    window.WVJBCallbacks = [callback];
+    var WVJBIframe = document.createElement('iframe');
+    WVJBIframe.style.display = 'none';
+    WVJBIframe.src = 'wvjbscheme://__BRIDGE_LOADED__';
+    document.documentElement.appendChild(WVJBIframe);
+    setTimeout(function () {
+        document.documentElement.removeChild(WVJBIframe);
+    }, 0);
 }
 
 export const callAppMethod = obj => {
     let { callName = "", parameters = {}, callback = () => { } } = obj;
-	if(!callName) {
-		return
-	} else {
-		setupWebViewJavascriptBridge(function(bridge) {
-			bridge.callHandler(callName, parameters, callback)
-		})
-	}
+    if (!callName) {
+        return
+    } else {
+        setupWebViewJavascriptBridge(function (bridge) {
+            bridge.callHandler(callName, parameters, callback)
+        })
+    }
+}
+export const CreateDom = (text, data = {}, ifPhone = false, ifAccount = false) => {
+    return createDom(
+        DialogMessage,
+        {},
+        {
+            content: text,
+            data,
+            ifPhone,
+            ifAccount,
+        }
+    );
 }
