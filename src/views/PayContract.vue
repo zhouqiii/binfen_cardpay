@@ -17,6 +17,9 @@
                         label="验证码"
                         class="codeWidth"
                         placeholder="请输入验证码"
+                        type="number"
+                        onkeyup="this.value=this.value.replace(/[^0-9]/g,'')"
+                        maxlength='6'
                     >
                         <template #button>
                             <van-button class="checkNum"
@@ -151,7 +154,7 @@ export default {
         //签约按钮
         signUp(){
             let ld=createDomLoading(Loading)
-            if(!this.verCode || this.verCode.toString().split(' ').join('').length === 0 || this.verCode.length !== 6) {
+            if(!this.verCode || this.verCode.length !== 6) {
                 ld.hide()
                 CreateDom(`<div style="text-align:center">请输入6位短信验证码</div>`)
             } else {
@@ -166,6 +169,7 @@ export default {
                     ld.hide()
                     if (res.code === '00') {
                         const stat=JSON.parse(res.data).stat
+                        const result=JSON.parse(res.data).result
                         if(stat === '00'){
                             callAppMethod({
                                 callName: "lastGoBack",
@@ -184,15 +188,15 @@ export default {
                             )
                         }else{
                             let message = '签约失败，请重试！'
-                            if (res.message) {
-                                message = res.message
+                            if (result) {
+                                message = result
                             }
                             CreateDom(`<div style="text-align:center">${message}</div>`)
                         }
                     } else if(res.code !== '-501'  && res.code !== '-505'){
                         let message = '签约失败，请重试！'
-                        if (res.message) {
-                            message = res.message
+                        if (JSON.parse(res.data).result) {
+                            message = JSON.parse(res.data).result
                         }
                         CreateDom(`<div style="text-align:center">${message},请重试！</div>`)
                     }
@@ -213,7 +217,7 @@ export default {
                     that.assign(data)
                 }
             });
-           // that.assign({cardAlias:'ahldsk',cardShow:'6879 **** **** 8989',phoneNo:'136 **** 8899'})
+           //that.assign({cardAlias:'ahldsk',cardShow:'6879 **** **** 8969',phoneNo:'136 **** 8899'})
         })
     }
 }
