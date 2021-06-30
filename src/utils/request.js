@@ -31,11 +31,27 @@ req.interceptors.response.use(res => {
                 !ifAccount,
                 ifAccount
             )
-        } else {
+        } else if (res.data.code === '00') {
+            const stat = JSON.parse(res.data.data).stat
+            if (stat === '01') {
+                CreateDom(`<div style="text-align:center">您已经超时，请重新登录</div>`,
+                    {},
+                    !ifAccount,
+                    ifAccount
+                )
+            } if (stat === '02') {
+                CreateDom(`<div style="text-align:center">发现您的账户在其他设备登录，如非本人操作请尽快更改您的登录密码。</div>`,
+                    {},
+                    !ifAccount,
+                    ifAccount
+                )
+            }
             return res.data
         }
+        return res.data
     }
     return res
 }, err => {
     console.log(err)
+    CreateDom(`<div style="text-align:center">系统异常,请重试！</div>`)
 })

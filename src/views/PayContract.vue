@@ -20,10 +20,11 @@
                         type="number"
                         onkeyup="this.value=this.value.replace(/[^0-9]/g,'')"
                         maxlength='6'
+                        @input="checkVerCode"
                     >
                         <template #button>
                             <van-button class="checkNum"
-                                @click.prevent="timeStart()"
+                                @click.prevent="sendVerCode"
                                 :disabled="btnChangeEnable"
                                 plain
                                 :class="{active:changeColor}"
@@ -63,8 +64,9 @@ export default {
     name:'PayContract',
     data(){
         return{
-            count:'0',//用来标识，当卡信息获取成功count=1，对验证码输入框的监听和修改手机号的入口才成立，
+            count:'1',//用来标识，当卡信息获取成功count=1，对验证码输入框的监听和修改手机号的入口才成立，
             //否则不监听因为信息获取失败，确定按钮一定不可以点击，也不可以去修改手机号
+            ifCode:false,//用来标志已经发过一次验证码
             type:'0',//lastGoback
             title:'签约',
             cardNum:'',//卡号
@@ -75,7 +77,7 @@ export default {
             timer: null,
             changeColor:false,//计时器文字的颜色更改
             submitBgColor:'#F72539',//确认按钮背景颜色设置，防止修改
-            btnIfSubmit:false,//是否可以提交
+            btnIfSubmit:true,//是否可以提交
             info:{},//用来存放获取的卡信息
             cardTitle:'卡\xa0\xa0\xa0号'
         }
@@ -91,18 +93,25 @@ export default {
                     CreateDom(`<div style="text-align:center;">卡信息获取失败，请返回重试！</div>`)
                     this.btnChangeEnable = true
                     this.count='0'
-                    this.btnIfSubmit=true
                 } else {
-                    this.count='1'
                     this.info = data
                     this.cardNum = data.cardShow//卡号
                     this.phoneNum = data.phoneNo//手机号
                 }
             }
         },
+        //监听验证码input框的输入，有值，则提交按钮高亮显示
+        checkVerCode(val) {
+            if(val.length===6){
+                if(this.count === '1' && this.ifCode){ //标志从客户端拿到的信息无误
+                     this.btnIfSubmit = false
+                }
+            }else{
+                this.btnIfSubmit = true
+            }
+        },
         // 点击按钮触发发送验证码计时器
         timeStart() {
-            this.sendVerCode()
             if (!this.timer) {
                 this.countdown = TIME_COUNT;
                 this.btnChangeEnable = true;
@@ -133,11 +142,29 @@ export default {
                 txnId: isMobile() + 'SIGN00003',
                 cardAlias: this.info.cardAlias,
             }
-            getVerCode(data).then((res)=>{
-                if (JSON.parse(res.data).stat === '00') {
-                    console.log('验证码发送成功')
-                }
-            })
+            getVerCode(data)
+                .then((res)=>{
+                    if (res.code === '00') {
+                        const stat=JSON.parse(res.data).stat
+                        const result=JSON.parse(res.data).result
+                        if( stat === "00"){
+                            this.ifCode=true
+                            this.timeStart()
+                        }else if(stat !== '01' && stat !== '02') {
+                            let message = '验证码发送失败，请重试！'
+                            if (result) {
+                                message = result
+                            }
+                            CreateDom(`<div style="text-align:center">${message}</div>`)
+                        }
+                    } else if(res.code !== '-501'  && res.code !== '-505') {
+                        let message = '验证码发送失败，请重试！'
+                        if (res.message) {
+                            message = res.message
+                        }
+                        CreateDom(`<div style="text-align:center">${message}</div>`)
+                    }
+                })
         },
         //更换手机号弹框
         showDialog() {
@@ -165,46 +192,34 @@ export default {
                     txnId: isMobile() + 'SIGN00004',
                     smsCode: this.verCode
                 }
-                sendSign(data).then((res) => {
-                    ld.hide()
-                    if (res.code === '00') {
-                        const stat=JSON.parse(res.data).stat
-                        const result=JSON.parse(res.data).result
-                        if(stat === '00'){
-                            callAppMethod({
-                                callName: "lastGoBack",
-                            });
-                        }else if(stat==='01'){
-                            CreateDom(`<div style="text-align:center">您已经超时，请重新登录</div>`,
-                                {},
-                                !ifAccount,
-                                ifAccount
-                            )
-                        }else if(stat==='02'){
-                            CreateDom(`<div style="text-align:center">发现您的账户在其他设备登录，如非本人操作请尽快更改您的登录密码。</div>`,
-                                {},
-                                !ifAccount,
-                                ifAccount
-                            )
-                        }else{
+                sendSign(data)
+                    .then((res) => {
+                        ld.hide()
+                        if (res.code === '00') {
+                            const stat=JSON.parse(res.data).stat
+                            const result=JSON.parse(res.data).result
+                            if(stat === '00'){
+                                callAppMethod({
+                                    callName: "lastGoBack",
+                                });
+                            }else if(stat !== '01' && stat !== '02') {
+                                let message = '签约失败，请重试！'
+                                if (result) {
+                                    message = result
+                                }
+                                CreateDom(`<div style="text-align:center">${message}</div>`)
+                            }
+                        } else if(res.code !== '-501'  && res.code !== '-505') {
                             let message = '签约失败，请重试！'
-                            if (result) {
-                                message = result
+                            if (res.message) {
+                                message = res.message
                             }
                             CreateDom(`<div style="text-align:center">${message}</div>`)
                         }
-                    } else if(res.code !== '-501'  && res.code !== '-505'){
-                        let message = '签约失败，请重试！'
-                        if (JSON.parse(res.data).result) {
-                            message = JSON.parse(res.data).result
-                        }
-                        CreateDom(`<div style="text-align:center">${message},请重试！</div>`)
-                    }
-                })
-                .catch(() => {
-                    ld = null
-                    CreateDom(`<div style="text-align:center">请求失败,请重试！</div>`)
-                });
+                    })
+                    .catch(() => {
+                        ld.hide()
+                    });
             }
         },
     },
@@ -219,7 +234,7 @@ export default {
             });
            //that.assign({cardAlias:'ahldsk',cardShow:'6879 **** **** 8969',phoneNo:'136 **** 8899'})
         })
-    }
+    },
 }
 </script>
 <style scoped>
